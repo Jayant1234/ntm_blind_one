@@ -4,6 +4,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from ntm.ntm import NTM
+from ntm.ntm_blind import NTM_blind
 from ntm.utils import plot_copy_results
 import numpy as np
 import argparse
@@ -15,7 +16,7 @@ parser.add_argument("--train", help="Trains the model", action="store_true")
 parser.add_argument("--ff", help="Feed forward controller", action="store_true")
 parser.add_argument("--eval", help="Evaluates the model. Default path is models/copy.pt", action="store_true")
 parser.add_argument("--modelpath", help="Specify the model path to load, for training or evaluation", type=str)
-parser.add_argument("--epochs", help="Specify the number of epochs for training", type=int, default=50_000)
+parser.add_argument("--epochs", help="Specify the number of epochs for training", type=int, default=100000)
 args = parser.parse_args()
 
 seed = 1
@@ -40,7 +41,7 @@ def train(epochs=50_000):
     sequence_min_length = 1
     sequence_max_length = 20
     vector_length = 8
-    memory_size = (128, 20)
+    memory_size = (128, 16)
     hidden_layer_size = 100
     batch_size = 4
     lstm_controller = not args.ff
@@ -55,10 +56,10 @@ def train(epochs=50_000):
     writer.add_scalar("seed", seed)
     writer.add_scalar("batch_size", batch_size)
 
-    model = NTM(vector_length, hidden_layer_size, memory_size, lstm_controller)
+    model = NTM_blind(vector_length, hidden_layer_size, memory_size, lstm_controller)
 
-    optimizer = optim.RMSprop(model.parameters(), momentum=0.9, alpha=0.95, lr=1e-4)
-    feedback_frequency = 100
+    optimizer = optim.RMSprop(model.parameters(), momentum=0.85, alpha=0.95, lr=1e-4)# momentum changed from 0.9
+    feedback_frequency = 200
     total_loss = []
     total_cost = []
 
@@ -93,18 +94,23 @@ def train(epochs=50_000):
             writer.add_scalar('training cost', running_cost, epoch)
             total_loss = []
             total_cost = []
+        #if epoch% feedback_frequency*10==0:
+            #print(model.Memory.memory)
 
     torch.save(model.state_dict(), model_path)
 
 
 def eval(model_path):
     vector_length = 8
-    memory_size = (128, 20)
+    #memory_size = (20, 128)
+    memory_size = (128, 16)
     hidden_layer_size = 100
     lstm_controller = not args.ff
 
-    model = NTM(vector_length, hidden_layer_size, memory_size, lstm_controller)
-
+    #model = NTM(vector_length, hidden_layer_size, memory_size, lstm_controller)
+    model = NTM_blind(vector_length, hidden_layer_size, memory_size, lstm_controller)
+    
+    
     print(f"Loading model from {model_path}")
     checkpoint = torch.load(model_path, map_location=torch.device('cpu'))
     model.load_state_dict(checkpoint)
@@ -124,7 +130,7 @@ def eval(model_path):
         y_out_binarized.apply_(lambda x: 0 if x < 0.5 else 1)
 
         plot_copy_results(target, y_out, vector_length)
-
+        print(model.memory.initial_state)
 
 if __name__ == "__main__":
     model_path = "models/copy.pt"
