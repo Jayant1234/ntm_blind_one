@@ -1,8 +1,8 @@
-# ntm - Neural Turing Machines in pytorch
+# Blind Memory with ntm - Neural Turing Machines in pytorch
 
-A [Neural Turing Machines](https://arxiv.org/abs/1410.5401) implementation in pytorch.
+Uses [Neural Turing Machines](https://arxiv.org/abs/1410.5401) implementation in pytorch to try out blind Memory concept. 
 
-The goal was to implement a simple NTM with 1 read head and 1 write head, to reproduce the original paper's results.
+Blind memory is simply a discrete location based method of reading/writing from memory in constant time. Current experiments reveal the hard to train nature of it and infeasibility of it without extensive pre-training. 
 
 
 ## Copy task
